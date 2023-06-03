@@ -3,6 +3,7 @@ import json
 import PyPDF2
 import pdfplumber
 import openai
+import spacy
 
 # OpenAI API key
 openai.api_key = os.getenv('OPENAI_KEY')
@@ -14,10 +15,12 @@ def extract_text_from_pdf(file_path):
             text += page.extract_text() + "\n"
     return text
 
+nlp = spacy.load("en_core_web_sm")
 
 def count_tokens(text):
-    return len(text.split())
-
+    doc = nlp(text)
+    token_count = len(doc)
+    return token_count
 
 def truncate_text(text, max_tokens):
     words = text.split()
@@ -25,15 +28,23 @@ def truncate_text(text, max_tokens):
         words = words[:max_tokens]
     return ' '.join(words)
 
-def calculate_token_count(text):
-    response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {"role": "system", "content": text},
-        ],
-        max_tokens=1,  # Set a minimum of 1 token for counting
-    )
-    return response['usage']['prompt_tokens']
+
+# def calculate_token_count(text):
+#     response = openai.ChatCompletion.create(
+#         model="gpt-3.5-turbo",
+#         messages=[
+#             {"role": "system", "content": text},
+#         ],
+#         max_tokens=1,  # Set a minimum of 1 token for counting
+#     )
+#     return response['usage']['prompt_tokens']
+
+from tiktoken import Tokenizer
+tokenizer = Tokenizer()
+
+def count_tokens_with_tiktoken(text):
+    token_count = sum(1 for _ in tokenizer.tokenize(text))
+    return token_count
 
 
 def process_text_with_gpt3(text):
@@ -52,23 +63,21 @@ def process_text_with_gpt3(text):
     }
     The extracted text:  
     """
+# Set a safe limit for the output
+    max_tokens_output = 1000
 
     # Calculate the remaining tokens available for the input
-    max_tokens_input = 4096
-    max_tokens_output = 4000
-    additional_tokens = 350
+    max_tokens_input = 4096 - max_tokens_output
 
-    text_token_count = calculate_token_count(text)
-    instruction_token_count = count_tokens(instruction)
-
-    # Calculate the maximum number of tokens allowed for the text
-    max_tokens_text = max_tokens_input - (instruction_token_count * 1.3) - additional_tokens
+    text_token_count = count_tokens_with_tiktoken(text)
+    instruction_token_count = count_tokens_with_tiktoken(instruction)
 
     # If the total tokens in the input exceed the maximum allowed,
     # then truncate the text
-    if text_token_count > max_tokens_text:
-        text = truncate_text(text, max_tokens_text)
-
+    if text_token_count + instruction_token_count > max_tokens_input:
+        excess = text_token_count + instruction_token_count - max_tokens_input
+        text = truncate_text(text, text_token_count - excess)
+        
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=[

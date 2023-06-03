@@ -1,3 +1,4 @@
+# Copyright (c) 2019 Tradeshift
 # Copyright (c) 2020 Sarthak Mittal
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -18,24 +19,17 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-FIELD_TYPES = {
-    "general": 0,
-    "optional": 1,
-    "amount": 2,
-    "date": 3
-}
 
-FIELDS = dict()
+class Model:
 
-FIELDS["invoice_number"] = FIELD_TYPES["general"]
-FIELDS["vendor_name"] = FIELD_TYPES["general"]
-FIELDS["mpan"] = FIELD_TYPES["general"]
-FIELDS["account_number"] = FIELD_TYPES["general"]
+    def train_step(self, inputs):
+        raise NotImplementedError()
 
-FIELDS["invoice_date"] = FIELD_TYPES["date"]
-FIELDS["charge_period_start_date"] = FIELD_TYPES["date"]
-FIELDS["charge_period_end_date"] = FIELD_TYPES["date"]
+    def val_step(self, inputs):
+        raise NotImplementedError
 
-FIELDS["net_amount"] = FIELD_TYPES["amount"]
-FIELDS["tax_amount"] = FIELD_TYPES["amount"]
-FIELDS["total_amount"] = FIELD_TYPES["amount"]
+    def load(self, name):
+        raise NotImplementedError
+
+    def save(self, name):
+        raise NotImplementedError

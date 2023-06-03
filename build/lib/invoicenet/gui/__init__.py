@@ -17,25 +17,3 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
-FIELD_TYPES = {
-    "general": 0,
-    "optional": 1,
-    "amount": 2,
-    "date": 3
-}
-
-FIELDS = dict()
-
-FIELDS["invoice_number"] = FIELD_TYPES["general"]
-FIELDS["vendor_name"] = FIELD_TYPES["general"]
-FIELDS["mpan"] = FIELD_TYPES["general"]
-FIELDS["account_number"] = FIELD_TYPES["general"]
-
-FIELDS["invoice_date"] = FIELD_TYPES["date"]
-FIELDS["charge_period_start_date"] = FIELD_TYPES["date"]
-FIELDS["charge_period_end_date"] = FIELD_TYPES["date"]
-
-FIELDS["net_amount"] = FIELD_TYPES["amount"]
-FIELDS["tax_amount"] = FIELD_TYPES["amount"]
-FIELDS["total_amount"] = FIELD_TYPES["amount"]

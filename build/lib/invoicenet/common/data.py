@@ -1,3 +1,4 @@
+# Copyright (c) 2019 Tradeshift
 # Copyright (c) 2020 Sarthak Mittal
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -18,24 +19,39 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-FIELD_TYPES = {
-    "general": 0,
-    "optional": 1,
-    "amount": 2,
-    "date": 3
-}
 
-FIELDS = dict()
+class Data:
+    def sample_generator(self):
+        raise NotImplementedError
 
-FIELDS["invoice_number"] = FIELD_TYPES["general"]
-FIELDS["vendor_name"] = FIELD_TYPES["general"]
-FIELDS["mpan"] = FIELD_TYPES["general"]
-FIELDS["account_number"] = FIELD_TYPES["general"]
+    def types(self):
+        raise NotImplementedError
 
-FIELDS["invoice_date"] = FIELD_TYPES["date"]
-FIELDS["charge_period_start_date"] = FIELD_TYPES["date"]
-FIELDS["charge_period_end_date"] = FIELD_TYPES["date"]
+    def shapes(self):
+        raise NotImplementedError
 
-FIELDS["net_amount"] = FIELD_TYPES["amount"]
-FIELDS["tax_amount"] = FIELD_TYPES["amount"]
-FIELDS["total_amount"] = FIELD_TYPES["amount"]
+    def array_to_str(self, arr):
+        raise NotImplementedError
+
+
+class UnkDict:
+    unk = '<UNK>'
+
+    def __init__(self, items):
+        if self.unk not in items:
+            raise ValueError("items must contain %s", self.unk)
+
+        self.delegate = dict([(c, i) for i, c in enumerate(items)])
+        self.rdict = {i: c for c, i in self.delegate.items()}
+
+    def __getitem__(self, item):
+        if item in self.delegate:
+            return self.delegate[item]
+        else:
+            return self.delegate[self.unk]
+
+    def __len__(self):
+        return len(self.delegate)
+
+    def idx2key(self, idx):
+        return self.rdict[idx]
