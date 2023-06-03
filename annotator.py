@@ -4,6 +4,7 @@ import PyPDF2
 import pdfplumber
 import openai
 import spacy
+from tiktoken import Tokenizer, TokenList
 
 # OpenAI API key
 openai.api_key = os.getenv('OPENAI_KEY')
@@ -17,10 +18,11 @@ def extract_text_from_pdf(file_path):
 
 nlp = spacy.load("en_core_web_sm")
 
+tokenizer = Tokenizer()
+
 def count_tokens(text):
-    doc = nlp(text)
-    token_count = len(doc)
-    return token_count
+    tokens = list(tokenizer.tokenize(text))
+    return len(tokens)
 
 def truncate_text(text, max_tokens):
     doc = nlp(text)
@@ -44,20 +46,23 @@ def process_text_with_gpt3(text):
     }
     The extracted text:  
     """
+
     # Set a safe limit for the output
     max_tokens_output = 800
+    buffer_tokens = 200
 
-    text_token_count = count_tokens(text)
     instruction_token_count = count_tokens(instruction)
-
-    # Calculate the remaining tokens available for the input
-    buffer_tokens = 200  # define the number of buffer tokens you need
     max_tokens_input = 4096 - instruction_token_count - max_tokens_output - buffer_tokens
 
-    # If the total tokens in the text exceed the maximum allowed,
-    # then truncate the text
-    if text_token_count > max_tokens_input:
+    # Truncate the text if it exceeds the maximum allowed
+    if count_tokens(text) > max_tokens_input:
         text = truncate_text(text, max_tokens_input)
+
+    text_token_count = count_tokens(text)
+
+    # Print token counts for debugging
+    print(f"Instruction token count: {instruction_token_count}")
+    print(f"Text token count: {text_token_count}")
 
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
@@ -65,8 +70,9 @@ def process_text_with_gpt3(text):
             {"role": "system", "content": instruction},
             {"role": "user", "content": text},
         ],
-        max_tokens=max_tokens_output  # Use the safe limit for the output
+        max_tokens=max_tokens_output
     )
+    
     return response.choices[0].message['content']
 
 def write_to_json(file_path, data):
