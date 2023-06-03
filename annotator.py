@@ -28,25 +28,6 @@ def truncate_text(text, max_tokens):
         words = words[:max_tokens]
     return ' '.join(words)
 
-
-# def calculate_token_count(text):
-#     response = openai.ChatCompletion.create(
-#         model="gpt-3.5-turbo",
-#         messages=[
-#             {"role": "system", "content": text},
-#         ],
-#         max_tokens=1,  # Set a minimum of 1 token for counting
-#     )
-#     return response['usage']['prompt_tokens']
-
-from tiktoken import Tokenizer
-tokenizer = Tokenizer()
-
-def count_tokens_with_tiktoken(text):
-    token_count = sum(1 for _ in tokenizer.tokenize(text))
-    return token_count
-
-
 def process_text_with_gpt3(text):
     instruction = """I want you to act as a data annotator. 
     Put the extracted text from the energy invoice into the desired format. 
@@ -63,21 +44,21 @@ def process_text_with_gpt3(text):
     }
     The extracted text:  
     """
-# Set a safe limit for the output
+    # Set a safe limit for the output
     max_tokens_output = 1000
 
     # Calculate the remaining tokens available for the input
     max_tokens_input = 4096 - max_tokens_output
 
-    text_token_count = count_tokens_with_tiktoken(text)
-    instruction_token_count = count_tokens_with_tiktoken(instruction)
+    text_token_count = count_tokens(text)
+    instruction_token_count = count_tokens(instruction)
 
     # If the total tokens in the input exceed the maximum allowed,
     # then truncate the text
     if text_token_count + instruction_token_count > max_tokens_input:
         excess = text_token_count + instruction_token_count - max_tokens_input
         text = truncate_text(text, text_token_count - excess)
-        
+
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=[
@@ -99,7 +80,10 @@ def parse_processed_text_to_json(text):
         print(f"Could not parse text: {text}")
         return None
 
-    required_keys = {"vendor_name", "invoice_date", "invoice_number", "total_amount", "charge_period_start_date", "charge_period_end_date", "mpan", "account_number"}
+    required_keys = {
+        "vendor_name", "invoice_date", "invoice_number", "total_amount",
+        "charge_period_start_date", "charge_period_end_date", "mpan", "account_number"
+    }
     if not required_keys.issubset(data.keys()):
         print(f"Missing keys in data: {data}")
         return None
@@ -114,9 +98,9 @@ def main():
             pdf_path = os.path.join(data_folder, filename)
             extracted_text = extract_text_from_pdf(pdf_path)
             processed_text = process_text_with_gpt3(extracted_text)
-            
+
             parsed_data = parse_processed_text_to_json(processed_text)
-            
+
             json_path = os.path.splitext(pdf_path)[0] + '.json'
             write_to_json(json_path, parsed_data)
 
