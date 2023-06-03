@@ -4,7 +4,7 @@ import PyPDF2
 import pdfplumber
 import openai
 import spacy
-from tiktoken import Tokenizer, TokenList
+from tiktoken import Tokenizer
 
 # OpenAI API key
 openai.api_key = os.getenv('OPENAI_KEY')
