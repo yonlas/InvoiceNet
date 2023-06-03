@@ -23,10 +23,10 @@ def count_tokens(text):
     return token_count
 
 def truncate_text(text, max_tokens):
-    words = text.split()
-    if len(words) > max_tokens:
-        words = words[:max_tokens]
-    return ' '.join(words)
+    doc = nlp(text)
+    if len(doc) > max_tokens:
+        doc = doc[:max_tokens]
+    return doc.text
 
 def process_text_with_gpt3(text):
     instruction = """I want you to act as a data annotator. 
@@ -45,19 +45,19 @@ def process_text_with_gpt3(text):
     The extracted text:  
     """
     # Set a safe limit for the output
-    max_tokens_output = 1000
-
-    # Calculate the remaining tokens available for the input
-    max_tokens_input = 4096 - max_tokens_output
+    max_tokens_output = 800
 
     text_token_count = count_tokens(text)
     instruction_token_count = count_tokens(instruction)
 
-    # If the total tokens in the input exceed the maximum allowed,
+    # Calculate the remaining tokens available for the input
+    buffer_tokens = 200  # define the number of buffer tokens you need
+    max_tokens_input = 4096 - instruction_token_count - max_tokens_output - buffer_tokens
+
+    # If the total tokens in the text exceed the maximum allowed,
     # then truncate the text
-    if text_token_count + instruction_token_count > max_tokens_input:
-        excess = text_token_count + instruction_token_count - max_tokens_input
-        text = truncate_text(text, text_token_count - excess)
+    if text_token_count > max_tokens_input:
+        text = truncate_text(text, max_tokens_input)
 
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
