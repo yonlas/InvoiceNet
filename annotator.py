@@ -1,10 +1,8 @@
 import os
 import json
-import PyPDF2
 import pdfplumber
 import openai
 import spacy
-from tiktoken import Tokenizer
 
 # OpenAI API key
 openai.api_key = os.getenv('OPENAI_KEY')
@@ -16,19 +14,13 @@ def extract_text_from_pdf(file_path):
             text += page.extract_text() + "\n"
     return text
 
-nlp = spacy.load("en_core_web_sm")
-
-tokenizer = Tokenizer()
-
 def count_tokens(text):
-    tokens = list(tokenizer.tokenize(text))
-    return len(tokens)
+    # Roughly estimate token count
+    return len(text) // 4
 
 def truncate_text(text, max_tokens):
-    doc = nlp(text)
-    if len(doc) > max_tokens:
-        doc = doc[:max_tokens]
-    return doc.text
+    # Roughly truncate text based on the estimated token count
+    return text[:max_tokens*4]
 
 def process_text_with_gpt3(text):
     instruction = """I want you to act as a data annotator. 
@@ -49,7 +41,7 @@ def process_text_with_gpt3(text):
 
     # Set a safe limit for the output
     max_tokens_output = 800
-    buffer_tokens = 200
+    buffer_tokens = 500
 
     instruction_token_count = count_tokens(instruction)
     max_tokens_input = 4096 - instruction_token_count - max_tokens_output - buffer_tokens
@@ -102,13 +94,18 @@ def main():
     for filename in os.listdir(data_folder):
         if filename.endswith('.pdf'):
             pdf_path = os.path.join(data_folder, filename)
-            extracted_text = extract_text_from_pdf(pdf_path)
-            processed_text = process_text_with_gpt3(extracted_text)
+            print(f"Processing file: {filename}")   # Add this line
+            try:
+                extracted_text = extract_text_from_pdf(pdf_path)
+                processed_text = process_text_with_gpt3(extracted_text)
 
-            parsed_data = parse_processed_text_to_json(processed_text)
+                parsed_data = parse_processed_text_to_json(processed_text)
 
-            json_path = os.path.splitext(pdf_path)[0] + '.json'
-            write_to_json(json_path, parsed_data)
+                json_path = os.path.splitext(pdf_path)[0] + '.json'
+                write_to_json(json_path, parsed_data)
+            except Exception as e:
+                print(f"Error occurred while processing {filename}: {str(e)}")
+
 
 if __name__ == '__main__':
     main()
